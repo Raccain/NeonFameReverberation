@@ -6,7 +6,7 @@
 #include "ParameterIDs.hpp"
 
 // =============================================================================
-// MyReverbAudioProcessorEditor
+// NFReverbAudioProcessorEditor
 //
 // WebView2 editor hosting the NeoGrid Minimal HTML/JS interface.
 //
@@ -18,17 +18,17 @@
 //
 // See: .claude/troubleshooting/resolutions/webview-member-order-crash.md
 // =============================================================================
-class MyReverbAudioProcessorEditor : public juce::AudioProcessorEditor
+class NFReverbAudioProcessorEditor : public juce::AudioProcessorEditor
 {
 public:
-    explicit MyReverbAudioProcessorEditor (MyReverbAudioProcessor&);
-    ~MyReverbAudioProcessorEditor() override = default;
+    explicit NFReverbAudioProcessorEditor (NFReverbAudioProcessor&);
+    ~NFReverbAudioProcessorEditor() override = default;
 
     void paint (juce::Graphics&) override;
     void resized() override;
 
 private:
-    MyReverbAudioProcessor& audioProcessor;
+    NFReverbAudioProcessor& audioProcessor;
 
     // =========================================================================
     // 1. PARAMETER RELAYS FIRST (no dependencies — destroyed last)
@@ -66,5 +66,5 @@ private:
     static const char*   getMimeForExtension (const juce::String& extension);
     static juce::String  getExtension (const juce::String& filename);
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MyReverbAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NFReverbAudioProcessorEditor)
 };

@@ -6,7 +6,7 @@
 // Parameter Layout
 // =============================================================================
 juce::AudioProcessorValueTreeState::ParameterLayout
-MyReverbAudioProcessor::createParameterLayout()
+NFReverbAudioProcessor::createParameterLayout()
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
@@ -51,7 +51,7 @@ MyReverbAudioProcessor::createParameterLayout()
 // =============================================================================
 // Constructor / Destructor
 // =============================================================================
-MyReverbAudioProcessor::MyReverbAudioProcessor()
+NFReverbAudioProcessor::NFReverbAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
     : AudioProcessor (BusesProperties()
                           .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
@@ -63,12 +63,12 @@ MyReverbAudioProcessor::MyReverbAudioProcessor()
 {
 }
 
-MyReverbAudioProcessor::~MyReverbAudioProcessor() {}
+NFReverbAudioProcessor::~NFReverbAudioProcessor() {}
 
 // =============================================================================
 // prepareToPlay
 // =============================================================================
-void MyReverbAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void NFReverbAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     currentSampleRate = sampleRate;
 
@@ -131,14 +131,14 @@ void MyReverbAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     resetSpringTank();
 }
 
-void MyReverbAudioProcessor::releaseResources()
+void NFReverbAudioProcessor::releaseResources()
 {
     resetSpringTank();
     dampA.reset();
     dampB.reset();
 }
 
-void MyReverbAudioProcessor::resetSpringTank() noexcept
+void NFReverbAudioProcessor::resetSpringTank() noexcept
 {
     for (auto& pd : preDelay) pd.reset();
     for (auto& ap : apA)      ap.reset();
@@ -152,7 +152,7 @@ void MyReverbAudioProcessor::resetSpringTank() noexcept
 // =============================================================================
 // Bus layout
 // =============================================================================
-bool MyReverbAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool NFReverbAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
      && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
@@ -165,7 +165,7 @@ bool MyReverbAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts)
 // Drive (tanh soft saturation, unity-gain normalised for small signals)
 // tanh(x * g) / g  →  approaches x as g → 1, clips softly as g increases
 // =============================================================================
-float MyReverbAudioProcessor::applyDrive (float x, float driveGain) noexcept
+float NFReverbAudioProcessor::applyDrive (float x, float driveGain) noexcept
 {
     return std::tanh (x * driveGain) / driveGain;
 }
@@ -173,7 +173,7 @@ float MyReverbAudioProcessor::applyDrive (float x, float driveGain) noexcept
 // =============================================================================
 // processBlock
 // =============================================================================
-void MyReverbAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
+void NFReverbAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                                            juce::MidiBuffer& /*midi*/)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -298,14 +298,14 @@ void MyReverbAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 // =============================================================================
 // State persistence
 // =============================================================================
-void MyReverbAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void NFReverbAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     if (auto xml = state.createXml())
         copyXmlToBinary (*xml, destData);
 }
 
-void MyReverbAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void NFReverbAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     if (auto xml = getXmlFromBinary (data, sizeInBytes))
         if (xml->hasTagName (apvts.state.getType()))
@@ -315,12 +315,12 @@ void MyReverbAudioProcessor::setStateInformation (const void* data, int sizeInBy
 // =============================================================================
 // Plugin entry point
 // =============================================================================
-juce::AudioProcessorEditor* MyReverbAudioProcessor::createEditor()
+juce::AudioProcessorEditor* NFReverbAudioProcessor::createEditor()
 {
-    return new MyReverbAudioProcessorEditor (*this);
+    return new NFReverbAudioProcessorEditor (*this);
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new MyReverbAudioProcessor();
+    return new NFReverbAudioProcessor();
 }

@@ -1,4 +1,4 @@
-# Style Guide v1 — MyReverb
+# Style Guide v1 — NeonFameReverberation
 
 ## Design Base: NeoGrid Minimal
 

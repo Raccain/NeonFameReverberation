@@ -1,4 +1,4 @@
-# MyReverb — DSP Architecture Specification
+# NeonFameReverberation — DSP Architecture Specification
 
 ## Core Components
 
@@ -100,7 +100,7 @@ All parameters use `juce::LinearSmoothedValue<float>` with 10ms ramp time to pre
 ## JUCE Modules Required
 
 ```cmake
-target_link_libraries(MyReverb PRIVATE
+target_link_libraries(NeonFameReverberation PRIVATE
     juce::juce_audio_basics
     juce::juce_audio_processors
     juce::juce_dsp

@@ -1,4 +1,4 @@
-# MyReverb — Parameter Specification
+# NeonFameReverberation — Parameter Specification
 
 ## Parameter Table
 

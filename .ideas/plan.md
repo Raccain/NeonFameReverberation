@@ -1,4 +1,4 @@
-# MyReverb — Implementation Plan
+# NeonFameReverberation — Implementation Plan
 
 ## Complexity Score: 3 / 5
 

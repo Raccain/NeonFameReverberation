@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 # ──────────────────────────────────────────────────────────────────────────────
-# MyReverb — Deep House Spring Reverb
+# NFReverb — Deep House Spring Reverb (NeonFameReverberation)
 # UI: WebView (WebView2 on Win, WKWebView on Mac)  |  Framework: JUCE 8
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -21,16 +21,16 @@ else()
     message(FATAL_ERROR "Unsupported platform")
 endif()
 
-message(STATUS "MyReverb: Building for ${PLUGIN_FORMATS}")
-message(STATUS "MyReverb: WebView backend: ${WEBVIEW_BACKEND}")
+message(STATUS "NFReverb: Building for ${PLUGIN_FORMATS}")
+message(STATUS "NFReverb: WebView backend: ${WEBVIEW_BACKEND}")
 
-juce_add_plugin(MyReverb
+juce_add_plugin(NFReverb
     COMPANY_NAME            "APC"
     PLUGIN_MANUFACTURER_CODE Apco
     PLUGIN_CODE             MRvb
     FORMATS                 ${PLUGIN_FORMATS}
     PRODUCT_NAME            "NeonFameReverberation"
-    VERSION                 "1.0.4"
+    VERSION                 "1.0.5"
     NEEDS_WEBVIEW2          ${NEEDS_WEBVIEW2}
     NEEDS_WEB_BROWSER       ${NEEDS_WEB_BROWSER}
     VST3_CATEGORIES         Fx Reverb
@@ -42,7 +42,7 @@ juce_add_plugin(MyReverb
 # NOTE: JUCE mangles duplicate filenames — two files named "index.js" become
 #       index_js (js/index.js) and index_js2 (js/juce/index.js)
 # ──────────────────────────────────────────────────────────────────────────────
-juce_add_binary_data(MyReverb_WebUI
+juce_add_binary_data(NFReverb_WebUI
     SOURCES
         Source/ui/public/index.html
         Source/ui/public/js/index.js
@@ -53,13 +53,13 @@ juce_add_binary_data(MyReverb_WebUI
 # ──────────────────────────────────────────────────────────────────────────────
 # Source files
 # ──────────────────────────────────────────────────────────────────────────────
-target_sources(MyReverb
+target_sources(NFReverb
     PRIVATE
         Source/PluginProcessor.cpp
         Source/PluginEditor.cpp
 )
 
-target_include_directories(MyReverb
+target_include_directories(NFReverb
     PRIVATE
         Source
 )
@@ -67,9 +67,9 @@ target_include_directories(MyReverb
 # ──────────────────────────────────────────────────────────────────────────────
 # Link libraries
 # ──────────────────────────────────────────────────────────────────────────────
-target_link_libraries(MyReverb
+target_link_libraries(NFReverb
     PRIVATE
-        MyReverb_WebUI
+        NFReverb_WebUI
         juce::juce_audio_basics
         juce::juce_audio_devices
         juce::juce_audio_formats
@@ -92,7 +92,7 @@ target_link_libraries(MyReverb
 # ──────────────────────────────────────────────────────────────────────────────
 # Compile definitions
 # ──────────────────────────────────────────────────────────────────────────────
-target_compile_definitions(MyReverb
+target_compile_definitions(NFReverb
     PUBLIC
         JUCE_WEB_BROWSER=1
         JUCE_USE_CURL=0
@@ -100,7 +100,7 @@ target_compile_definitions(MyReverb
 )
 
 if(WIN32)
-    target_compile_definitions(MyReverb
+    target_compile_definitions(NFReverb
         PUBLIC
             JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1
     )

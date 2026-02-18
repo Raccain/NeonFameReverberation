@@ -1,4 +1,4 @@
-# UI Specification v1 — MyReverb
+# UI Specification v1 — NeonFameReverberation
 
 ## Design Base
 **Library:** NeoGrid Minimal
