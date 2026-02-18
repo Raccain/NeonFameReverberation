@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NeonFameReverberation v2 — Signal Flow Preview</title>
+  <style>
+    :root {
+      --bg:       #0D0B08;
+      --surface:  #17140E;
+      --panel:    rgba(10,8,5,0.72);
+      --primary:  #FF9500;
+      --text:     #EDE8DF;
+      --muted:    #7A7060;
+      --border:   #2A2418;
+      --radius:   4px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 760px; height: 220px;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    /* ── Plugin shell ── */
+    .plugin {
+      width: 100%; height: 100%;
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--primary);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Full-bleed spring background ── */
+    .spring-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Corner screws ── */
+    .screw {
+      position: absolute;
+      width: 8px; height: 8px;
+      background: #0a0806;
+      border: 1px solid #1e1a12;
+      border-radius: 50%;
+      z-index: 10;
+    }
+    .screw::after {
+      content: '';
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%,-50%) rotate(45deg);
+      width: 55%; height: 1px; background: #2e2818;
+    }
+    .s-tl { top:6px; left:6px; }   .s-tr { top:6px; right:6px; }
+    .s-bl { bottom:6px; left:6px; } .s-br { bottom:6px; right:6px; }
+
+    /* ── Header ── */
+    .header {
+      height: 34px; padding: 0 22px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(255,149,0,0.07);
+      flex-shrink: 0;
+      position: relative; z-index: 2;
+    }
+    .plugin-name {
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--text);
+    }
+    .plugin-name em { color: var(--primary); font-style: normal; }
+    .header-right {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .plugin-sub {
+      font-size: 8px; font-weight: 600;
+      letter-spacing: 0.28em; text-transform: uppercase;
+      color: var(--muted);
+    }
+    .led {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 5px var(--primary), 0 0 10px rgba(255,149,0,0.35);
+    }
+
+    /* ── Signal flow row — centred, tight ── */
+    .body {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;   /* centres the whole group */
+      padding: 8px 30px;         /* 30px breathing room from plugin edges */
+      gap: 10px;                 /* ← tight gap between stages */
+      position: relative; z-index: 2;
+      min-height: 0;
+    }
+
+    /* ── Stage box ── */
+    .stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .stage-label {
+      font-size: 8.5px; font-weight: 700;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--text);
+      opacity: 0.55;
+      line-height: 1;
+    }
+
+    .stage-box {
+      background: var(--panel);
+      border: 1px solid rgba(255,149,0,0.12);
+      border-radius: var(--radius);
+      padding: 6px 10px 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      position: relative;
+    }
+    /* subtle amber glow on top edge */
+    .stage-box::before {
+      content: '';
+      position: absolute; top: 0; left: 10%; right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,149,0,0.4), transparent);
+    }
+
+    .stage-controls {
+      display: flex; gap: 8px; align-items: center;
+    }
+
+    /* ── Knob ── */
+    .knob-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 3px; cursor: ns-resize;
+      -webkit-user-select: none; user-select: none;
+      flex-shrink: 0;
+      width: 52px;
+    }
+
+    .knob-svg {
+      overflow: visible;
+      filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));
+      transition: filter 0.12s;
+      pointer-events: none;
+      width: 44px; height: 44px;
+    }
+
+    /* single-knob stages get a minimum box width so they don't look too narrow */
+    .stage:not(.st-spring) .stage-box {
+      min-width: 76px;
+    }
+
+    .knob-label {
+      font-size: 7.5px; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--muted); text-align: center;
+      transition: color 0.15s; line-height: 1;
+    }
+    .knob-value {
+      font-size: 7.5px; font-family: 'Courier New', monospace;
+      color: var(--primary); opacity: 0.7;
+      min-height: 10px; text-align: center; line-height: 1;
+    }
+
+    .knob-wrap:hover .knob-label { color: var(--text); }
+    .knob-wrap.dragging .knob-svg {
+      filter: drop-shadow(0 0 7px rgba(255,149,0,0.75)) drop-shadow(0 2px 5px rgba(0,0,0,0.7));
+    }
+    .knob-wrap.dragging .knob-label { color: var(--primary); }
+    .knob-wrap.dragging .knob-value { opacity: 1; }
+
+    /* ── Footer ── */
+    .footer {
+      height: 20px; padding: 0 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(0,0,0,0.3);
+      border-top: 1px solid rgba(255,149,0,0.05);
+      flex-shrink: 0;
+      position: relative; z-index: 2;
+    }
+    .footer span {
+      font-size: 7.5px; font-family: 'Courier New', monospace;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text); opacity: 0.45;
+    }
+    #debug-log { opacity: 1 !important; color: var(--primary) !important; }
+  </style>
+</head>
+<body>
+
+<div class="plugin">
+
+  <!-- Full-bleed spring background -->
+  <svg class="spring-bg" viewBox="0 0 760 220" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="fade" cx="50%" cy="50%" r="55%">
+        <stop offset="0%"   stop-color="#FF9500" stop-opacity="0.12"/>
+        <stop offset="100%" stop-color="#FF9500" stop-opacity="0.0"/>
+      </radialGradient>
+    </defs>
+
+    <!--
+      Real spring coil viewed from the side:
+      Each loop is a flattened ellipse (rx=18, ry=42, centre y=110).
+      Loops are spaced 26px apart along x. 26 loops fit across 760px.
+
+      Each loop drawn in 2 passes:
+        Pass 1 — BACK half: bottom arc (visible behind the wire in front)
+        Pass 2 — FRONT half: top arc (crosses over the previous loop's back)
+
+      This produces the true coil crossover / depth illusion.
+
+      Soft glow ellipses drawn first as wide low-opacity stroke behind everything.
+    -->
+
+    <!-- ── GLOW (full ellipses, wide soft stroke) ── -->
+    <ellipse cx="15"  cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="41"  cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="67"  cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="93"  cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="119" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="145" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="171" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="197" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="223" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="249" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="275" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="301" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="327" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="353" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="379" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="405" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="431" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="457" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="483" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="509" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="535" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="561" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="587" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="613" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="639" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="665" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="691" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="717" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+    <ellipse cx="743" cy="110" rx="18" ry="42" fill="none" stroke="url(#fade)" stroke-width="14" opacity="0.8"/>
+
+    <!--
+      PASS 1 — BACK halves (bottom arc of each ellipse: sweep-flag=0 large-arc=1)
+      Arc from left tangent to right tangent going DOWNWARD (visible behind front wire)
+      Each ellipse: centre cx, ry=42. Left point=(cx-13,110), Right point=(cx+13,110).
+      Bottom arc: M cx-13,110  A 18 42 0 1 0 cx+13,110
+    -->
+    <g fill="none" stroke="#FF9500" stroke-width="1.6" opacity="0.09">
+      <path d="M -3,110 A 18 42 0 1 0 33,110"/>
+      <path d="M 23,110 A 18 42 0 1 0 59,110"/>
+      <path d="M 49,110 A 18 42 0 1 0 85,110"/>
+      <path d="M 75,110 A 18 42 0 1 0 111,110"/>
+      <path d="M 101,110 A 18 42 0 1 0 137,110"/>
+      <path d="M 127,110 A 18 42 0 1 0 163,110"/>
+      <path d="M 153,110 A 18 42 0 1 0 189,110"/>
+      <path d="M 179,110 A 18 42 0 1 0 215,110"/>
+      <path d="M 205,110 A 18 42 0 1 0 241,110"/>
+      <path d="M 231,110 A 18 42 0 1 0 267,110"/>
+      <path d="M 257,110 A 18 42 0 1 0 293,110"/>
+      <path d="M 283,110 A 18 42 0 1 0 319,110"/>
+      <path d="M 309,110 A 18 42 0 1 0 345,110"/>
+      <path d="M 335,110 A 18 42 0 1 0 371,110"/>
+      <path d="M 361,110 A 18 42 0 1 0 397,110"/>
+      <path d="M 387,110 A 18 42 0 1 0 423,110"/>
+      <path d="M 413,110 A 18 42 0 1 0 449,110"/>
+      <path d="M 439,110 A 18 42 0 1 0 475,110"/>
+      <path d="M 465,110 A 18 42 0 1 0 501,110"/>
+      <path d="M 491,110 A 18 42 0 1 0 527,110"/>
+      <path d="M 517,110 A 18 42 0 1 0 553,110"/>
+      <path d="M 543,110 A 18 42 0 1 0 579,110"/>
+      <path d="M 569,110 A 18 42 0 1 0 605,110"/>
+      <path d="M 595,110 A 18 42 0 1 0 631,110"/>
+      <path d="M 621,110 A 18 42 0 1 0 657,110"/>
+      <path d="M 647,110 A 18 42 0 1 0 683,110"/>
+      <path d="M 673,110 A 18 42 0 1 0 709,110"/>
+      <path d="M 699,110 A 18 42 0 1 0 735,110"/>
+      <path d="M 725,110 A 18 42 0 1 0 761,110"/>
+    </g>
+
+    <!--
+      PASS 2 — FRONT halves (top arc of each ellipse: sweep-flag=1 large-arc=1)
+      First erase the back wire beneath with a thick background-colour stroke,
+      then draw the bright front wire on top.
+      Top arc: M cx-13,110  A 18 42 0 1 1 cx+13,110
+    -->
+
+    <!-- Erase layer (background colour, slightly wider) -->
+    <g fill="none" stroke="#17140E" stroke-width="5" opacity="1">
+      <path d="M -3,110 A 18 42 0 1 1 33,110"/>
+      <path d="M 23,110 A 18 42 0 1 1 59,110"/>
+      <path d="M 49,110 A 18 42 0 1 1 85,110"/>
+      <path d="M 75,110 A 18 42 0 1 1 111,110"/>
+      <path d="M 101,110 A 18 42 0 1 1 137,110"/>
+      <path d="M 127,110 A 18 42 0 1 1 163,110"/>
+      <path d="M 153,110 A 18 42 0 1 1 189,110"/>
+      <path d="M 179,110 A 18 42 0 1 1 215,110"/>
+      <path d="M 205,110 A 18 42 0 1 1 241,110"/>
+      <path d="M 231,110 A 18 42 0 1 1 267,110"/>
+      <path d="M 257,110 A 18 42 0 1 1 293,110"/>
+      <path d="M 283,110 A 18 42 0 1 1 319,110"/>
+      <path d="M 309,110 A 18 42 0 1 1 345,110"/>
+      <path d="M 335,110 A 18 42 0 1 1 371,110"/>
+      <path d="M 361,110 A 18 42 0 1 1 397,110"/>
+      <path d="M 387,110 A 18 42 0 1 1 423,110"/>
+      <path d="M 413,110 A 18 42 0 1 1 449,110"/>
+      <path d="M 439,110 A 18 42 0 1 1 475,110"/>
+      <path d="M 465,110 A 18 42 0 1 1 501,110"/>
+      <path d="M 491,110 A 18 42 0 1 1 527,110"/>
+      <path d="M 517,110 A 18 42 0 1 1 553,110"/>
+      <path d="M 543,110 A 18 42 0 1 1 579,110"/>
+      <path d="M 569,110 A 18 42 0 1 1 605,110"/>
+      <path d="M 595,110 A 18 42 0 1 1 631,110"/>
+      <path d="M 621,110 A 18 42 0 1 1 657,110"/>
+      <path d="M 647,110 A 18 42 0 1 1 683,110"/>
+      <path d="M 673,110 A 18 42 0 1 1 709,110"/>
+      <path d="M 699,110 A 18 42 0 1 1 735,110"/>
+      <path d="M 725,110 A 18 42 0 1 1 761,110"/>
+    </g>
+
+    <!-- Front wire -->
+    <g fill="none" stroke="#FF9500" stroke-width="1.6" opacity="0.18">
+      <path d="M -3,110 A 18 42 0 1 1 33,110"/>
+      <path d="M 23,110 A 18 42 0 1 1 59,110"/>
+      <path d="M 49,110 A 18 42 0 1 1 85,110"/>
+      <path d="M 75,110 A 18 42 0 1 1 111,110"/>
+      <path d="M 101,110 A 18 42 0 1 1 137,110"/>
+      <path d="M 127,110 A 18 42 0 1 1 163,110"/>
+      <path d="M 153,110 A 18 42 0 1 1 189,110"/>
+      <path d="M 179,110 A 18 42 0 1 1 215,110"/>
+      <path d="M 205,110 A 18 42 0 1 1 241,110"/>
+      <path d="M 231,110 A 18 42 0 1 1 267,110"/>
+      <path d="M 257,110 A 18 42 0 1 1 293,110"/>
+      <path d="M 283,110 A 18 42 0 1 1 319,110"/>
+      <path d="M 309,110 A 18 42 0 1 1 345,110"/>
+      <path d="M 335,110 A 18 42 0 1 1 371,110"/>
+      <path d="M 361,110 A 18 42 0 1 1 397,110"/>
+      <path d="M 387,110 A 18 42 0 1 1 423,110"/>
+      <path d="M 413,110 A 18 42 0 1 1 449,110"/>
+      <path d="M 439,110 A 18 42 0 1 1 475,110"/>
+      <path d="M 465,110 A 18 42 0 1 1 501,110"/>
+      <path d="M 491,110 A 18 42 0 1 1 527,110"/>
+      <path d="M 517,110 A 18 42 0 1 1 553,110"/>
+      <path d="M 543,110 A 18 42 0 1 1 579,110"/>
+      <path d="M 569,110 A 18 42 0 1 1 605,110"/>
+      <path d="M 595,110 A 18 42 0 1 1 631,110"/>
+      <path d="M 621,110 A 18 42 0 1 1 657,110"/>
+      <path d="M 647,110 A 18 42 0 1 1 683,110"/>
+      <path d="M 673,110 A 18 42 0 1 1 709,110"/>
+      <path d="M 699,110 A 18 42 0 1 1 735,110"/>
+      <path d="M 725,110 A 18 42 0 1 1 761,110"/>
+    </g>
+  </svg>
+
+  <div class="screw s-tl"></div><div class="screw s-tr"></div>
+  <div class="screw s-bl"></div><div class="screw s-br"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="plugin-name"><em>NEONFAME</em> REVERBERATION</div>
+    <div class="header-right">
+      <div class="plugin-sub">Spring Reverb</div>
+      <div class="led"></div>
+    </div>
+  </div>
+
+  <!-- Signal flow -->
+  <div class="body">
+
+    <!-- PRE-DELAY -->
+    <div class="stage">
+      <div class="stage-label">Pre-Delay</div>
+      <div class="stage-box">
+        <div class="stage-controls">
+          <div class="knob-wrap" id="knob-pre_delay" data-param="pre_delay" data-min="0" data-max="100" data-default="10" data-unit="ms">
+            <svg class="knob-svg" viewBox="0 0 64 64">
+              <path d="M12.2 51.8 A28 28 0 1 1 51.8 51.8" fill="none" stroke="#241E12" stroke-width="6" stroke-linecap="round"/>
+              <circle class="value-arc" cx="32" cy="32" r="28" fill="none" stroke="#FF9500" stroke-width="6" stroke-linecap="round" transform="rotate(135 32 32)" stroke-dasharray="0 175.93"/>
+              <circle cx="32" cy="32" r="3" fill="#FF9500" opacity="0.35"/>
+            </svg>
+            <div class="knob-label">Pre-Dly</div>
+            <div class="knob-value">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DRIVE -->
+    <div class="stage">
+      <div class="stage-label">Drive</div>
+      <div class="stage-box">
+        <div class="stage-controls">
+          <div class="knob-wrap" id="knob-drive" data-param="drive" data-min="0" data-max="1" data-default="0.2" data-unit="">
+            <svg class="knob-svg" viewBox="0 0 64 64">
+              <path d="M12.2 51.8 A28 28 0 1 1 51.8 51.8" fill="none" stroke="#241E12" stroke-width="6" stroke-linecap="round"/>
+              <circle class="value-arc" cx="32" cy="32" r="28" fill="none" stroke="#FF9500" stroke-width="6" stroke-linecap="round" transform="rotate(135 32 32)" stroke-dasharray="0 175.93"/>
+              <circle cx="32" cy="32" r="3" fill="#FF9500" opacity="0.35"/>
+            </svg>
+            <div class="knob-label">Drive</div>
+            <div class="knob-value">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPRING TANK -->
+    <div class="stage">
+      <div class="stage-label">Spring Tank</div>
+      <div class="stage-box">
+        <div class="stage-controls">
+
+          <div class="knob-wrap" id="knob-tension" data-param="tension" data-min="0" data-max="1" data-default="0.5" data-unit="">
+            <svg class="knob-svg" viewBox="0 0 64 64">
+              <path d="M12.2 51.8 A28 28 0 1 1 51.8 51.8" fill="none" stroke="#241E12" stroke-width="6" stroke-linecap="round"/>
+              <circle class="value-arc" cx="32" cy="32" r="28" fill="none" stroke="#FF9500" stroke-width="6" stroke-linecap="round" transform="rotate(135 32 32)" stroke-dasharray="0 175.93"/>
+              <circle cx="32" cy="32" r="3" fill="#FF9500" opacity="0.35"/>
+            </svg>
+            <div class="knob-label">Tension</div>
+            <div class="knob-value">—</div>
+          </div>
+
+          <div class="knob-wrap" id="knob-decay" data-param="decay" data-min="0.1" data-max="8" data-default="2" data-unit="s">
+            <svg class="knob-svg" viewBox="0 0 64 64">
+              <path d="M12.2 51.8 A28 28 0 1 1 51.8 51.8" fill="none" stroke="#241E12" stroke-width="6" stroke-linecap="round"/>
+              <circle class="value-arc" cx="32" cy="32" r="28" fill="none" stroke="#FF9500" stroke-width="6" stroke-linecap="round" transform="rotate(135 32 32)" stroke-dasharray="0 175.93"/>
+              <circle cx="32" cy="32" r="3" fill="#FF9500" opacity="0.35"/>
+            </svg>
+            <div class="knob-label">Decay</div>
+            <div class="knob-value">—</div>
+          </div>
+
+          <div class="knob-wrap" id="knob-damping" data-param="damping" data-min="0" data-max="1" data-default="0.4" data-unit="">
+            <svg class="knob-svg" viewBox="0 0 64 64">
+              <path d="M12.2 51.8 A28 28 0 1 1 51.8 51.8" fill="none" stroke="#241E12" stroke-width="6" stroke-linecap="round"/>
+              <circle class="value-arc" cx="32" cy="32" r="28" fill="none" stroke="#FF9500" stroke-width="6" stroke-linecap="round" transform="rotate(135 32 32)" stroke-dasharray="0 175.93"/>
+              <circle cx="32" cy="32" r="3" fill="#FF9500" opacity="0.35"/>
+            </svg>
+            <div class="knob-label">Damping</div>
+            <div class="knob-value">—</div>
+          </div>
+
+          <div class="knob-wrap" id="knob-wobble" data-param="wobble" data-min="0" data-max="1" data-default="0.3" data-unit="">
+            <svg class="knob-svg" viewBox="0 0 64 64">
+              <path d="M12.2 51.8 A28 28 0 1 1 51.8 51.8" fill="none" stroke="#241E12" stroke-width="6" stroke-linecap="round"/>
+              <circle class="value-arc" cx="32" cy="32" r="28" fill="none" stroke="#FF9500" stroke-width="6" stroke-linecap="round" transform="rotate(135 32 32)" stroke-dasharray="0 175.93"/>
+              <circle cx="32" cy="32" r="3" fill="#FF9500" opacity="0.35"/>
+            </svg>
+            <div class="knob-label">Wobble</div>
+            <div class="knob-value">—</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- MIX -->
+    <div class="stage">
+      <div class="stage-label">Output</div>
+      <div class="stage-box">
+        <div class="stage-controls">
+          <div class="knob-wrap" id="knob-mix" data-param="mix" data-min="0" data-max="1" data-default="0.5" data-unit="%">
+            <svg class="knob-svg" viewBox="0 0 64 64">
+              <path d="M12.2 51.8 A28 28 0 1 1 51.8 51.8" fill="none" stroke="#241E12" stroke-width="6" stroke-linecap="round"/>
+              <circle class="value-arc" cx="32" cy="32" r="28" fill="none" stroke="#FF9500" stroke-width="6" stroke-linecap="round" transform="rotate(135 32 32)" stroke-dasharray="0 175.93"/>
+              <circle cx="32" cy="32" r="3" fill="#FF9500" opacity="0.35"/>
+            </svg>
+            <div class="knob-label">Mix</div>
+            <div class="knob-value">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.body -->
+
+  <div class="footer">
+    <span>NeonFameReverberation v2.0.0-preview</span>
+    <span id="debug-log">preview</span>
+  </div>
+</div>
+
+<script>
+(function() {
+  const ARC_CIRC = 175.929, ARC_SWEEP = 131.947;
+  function fmt(v, unit) {
+    if (unit === "ms") return Math.round(v) + "ms";
+    if (unit === "s")  return v.toFixed(2) + "s";
+    if (unit === "%")  return Math.round(v * 100) + "%";
+    return v.toFixed(2);
+  }
+  class Knob {
+    constructor(el) {
+      this.el = el;
+      this.min = parseFloat(el.dataset.min); this.max = parseFloat(el.dataset.max);
+      this.def = parseFloat(el.dataset.default); this.unit = el.dataset.unit || "";
+      this.arc = el.querySelector(".value-arc"); this.disp = el.querySelector(".knob-value");
+      this.norm = (this.def - this.min) / (this.max - this.min);
+      this.dragging = false; this.startY = 0; this.startNorm = 0;
+      this._render(this.norm);
+      el.addEventListener("mousedown", e => { this.dragging=true; this.startY=e.clientY; this.startNorm=this.norm; el.classList.add("dragging"); e.preventDefault(); });
+      el.addEventListener("dblclick", () => { this.norm=(this.def-this.min)/(this.max-this.min); this._render(this.norm); });
+    }
+    move(e) { if (!this.dragging) return; this.norm=Math.max(0,Math.min(1,this.startNorm+(this.startY-e.clientY)/180)); this._render(this.norm); }
+    up()    { if (!this.dragging) return; this.dragging=false; this.el.classList.remove("dragging"); }
+    _render(n) {
+      const len=n*ARC_SWEEP, gap=ARC_CIRC-len;
+      this.arc.setAttribute("stroke-dasharray", len.toFixed(2)+" "+gap.toFixed(2));
+      this.disp.textContent = fmt(this.min+n*(this.max-this.min), this.unit);
+    }
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+    const ks = Array.from(document.querySelectorAll(".knob-wrap")).map(el => new Knob(el));
+    document.addEventListener("mousemove", e => ks.forEach(k => k.move(e)));
+    document.addEventListener("mouseup",   ()  => ks.forEach(k => k.up()));
+  });
+})();
+</script>
+</body>
+</html>
