@@ -3,8 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>NeonFameReverberation</title>
-  <!-- JUCE integration — must be module type for ES6 imports -->
-  <script type="module" src="js/index.js"></script>
   <style>
     /* === NeoGrid Minimal — MyReverb Production UI === */
     :root {
@@ -113,6 +111,7 @@
       width: 52px; height: 52px; overflow: visible;
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
       transition: filter 0.1s;
+      pointer-events: none;
     }
     .knob-label {
       font-size: 9px; font-weight: 700;
@@ -142,6 +141,7 @@
       letter-spacing: 0.12em; text-transform: uppercase;
       color: var(--muted); opacity: 0.3;
     }
+    #debug-log { opacity: 1 !important; color: #ff0 !important; }
   </style>
 </head>
 <body>
@@ -250,10 +250,264 @@
   </div><!-- /.body -->
 
   <div class="footer">
-    <span>NeonFameReverberation</span>
-    <span>Spring Reverb &middot; JUCE 8</span>
+    <span>NeonFameReverberation v1.0.5</span>
+    <span id="debug-log">ready</span>
   </div>
 </div>
+
+<script>
+// =============================================================================
+// JUCE Native Interop (inlined from juce/check_native_interop.js)
+// =============================================================================
+(function() {
+  if (typeof window.__JUCE__ !== "undefined" &&
+      typeof window.__JUCE__.getAndroidUserScripts !== "undefined" &&
+      typeof window.inAndroidUserScriptEval === "undefined") {
+    window.inAndroidUserScriptEval = true;
+    eval(window.__JUCE__.getAndroidUserScripts());
+    delete window.inAndroidUserScriptEval;
+  }
+
+  if (typeof window.__JUCE__ === "undefined") {
+    window.__JUCE__ = { postMessage: function() {} };
+  }
+
+  if (typeof window.__JUCE__.initialisationData === "undefined") {
+    window.__JUCE__.initialisationData = {
+      __juce__platform: [], __juce__functions: [],
+      __juce__registeredGlobalEventIds: [],
+      __juce__sliders: [], __juce__toggles: [], __juce__comboBoxes: []
+    };
+  }
+
+  class ListenerList {
+    constructor() { this.listeners = new Map(); this.listenerId = 0; }
+    addListener(fn) { const id = this.listenerId++; this.listeners.set(id, fn); return id; }
+    removeListener(id) { this.listeners.delete(id); }
+    callListeners(p) { for (const [, v] of this.listeners) v(p); }
+  }
+
+  class EventListenerList {
+    constructor() { this.eventListeners = new Map(); }
+    addEventListener(eventId, fn) {
+      if (!this.eventListeners.has(eventId))
+        this.eventListeners.set(eventId, new ListenerList());
+      const id = this.eventListeners.get(eventId).addListener(fn);
+      return [eventId, id];
+    }
+    removeEventListener([eventId, id]) {
+      if (this.eventListeners.has(eventId))
+        this.eventListeners.get(eventId).removeListener(id);
+    }
+    emitEvent(eventId, object) {
+      if (this.eventListeners.has(eventId))
+        this.eventListeners.get(eventId).callListeners(object);
+    }
+  }
+
+  class Backend {
+    constructor() { this.listeners = new EventListenerList(); }
+    addEventListener(eventId, fn) { return this.listeners.addEventListener(eventId, fn); }
+    removeEventListener(handle) { this.listeners.removeEventListener(handle); }
+    emitEvent(eventId, object) {
+      window.__JUCE__.postMessage(JSON.stringify({ eventId: eventId, payload: object }));
+    }
+    emitByBackend(eventId, object) { this.listeners.emitEvent(eventId, JSON.parse(object)); }
+  }
+
+  if (typeof window.__JUCE__.backend === "undefined")
+    window.__JUCE__.backend = new Backend();
+})();
+
+// =============================================================================
+// JUCE SliderState (inlined from juce/index.js)
+// =============================================================================
+(function() {
+  const BasicControl_valueChangedEventId    = "valueChanged";
+  const BasicControl_propertiesChangedId    = "propertiesChanged";
+  const SliderControl_sliderDragStartedId   = "sliderDragStarted";
+  const SliderControl_sliderDragEndedId     = "sliderDragEnded";
+
+  class ListenerList {
+    constructor() { this.listeners = new Map(); this.listenerId = 0; }
+    addListener(fn) { const id = this.listenerId++; this.listeners.set(id, fn); return id; }
+    removeListener(id) { this.listeners.delete(id); }
+    callListeners(p) { for (const [, v] of this.listeners) v(p); }
+  }
+
+  class SliderState {
+    constructor(name) {
+      this.name = name;
+      this.identifier = "__juce__slider" + name;
+      this.scaledValue = 0;
+      this.properties = { start: 0, end: 1, skew: 1, name: "", label: "",
+                          numSteps: 100, interval: 0, parameterIndex: -1 };
+      this.valueChangedEvent = new ListenerList();
+      this.propertiesChangedEvent = new ListenerList();
+
+      window.__JUCE__.backend.addEventListener(this.identifier,
+        (event) => this.handleEvent(event));
+      window.__JUCE__.backend.emitEvent(this.identifier,
+        { eventType: "requestInitialUpdate" });
+    }
+
+    setNormalisedValue(newValue) {
+      this.scaledValue = this.snapToLegalValue(this.normalisedToScaledValue(newValue));
+      window.__JUCE__.backend.emitEvent(this.identifier,
+        { eventType: BasicControl_valueChangedEventId, value: this.scaledValue });
+    }
+
+    sliderDragStarted() {
+      window.__JUCE__.backend.emitEvent(this.identifier,
+        { eventType: SliderControl_sliderDragStartedId });
+    }
+
+    sliderDragEnded() {
+      window.__JUCE__.backend.emitEvent(this.identifier,
+        { eventType: SliderControl_sliderDragEndedId });
+    }
+
+    handleEvent(event) {
+      if (event.eventType === BasicControl_valueChangedEventId) {
+        this.scaledValue = event.value;
+        this.valueChangedEvent.callListeners();
+      }
+      if (event.eventType === BasicControl_propertiesChangedId) {
+        const { eventType, ...rest } = event;
+        this.properties = rest;
+        this.propertiesChangedEvent.callListeners();
+      }
+    }
+
+    getScaledValue() { return this.scaledValue; }
+
+    getNormalisedValue() {
+      return Math.pow(
+        (this.scaledValue - this.properties.start) /
+        (this.properties.end - this.properties.start),
+        this.properties.skew);
+    }
+
+    normalisedToScaledValue(v) {
+      return Math.pow(v, 1 / this.properties.skew) *
+        (this.properties.end - this.properties.start) + this.properties.start;
+    }
+
+    snapToLegalValue(value) {
+      const interval = this.properties.interval;
+      if (interval === 0) return value;
+      const start = this.properties.start;
+      const clamp = (v, mn, mx) => Math.max(mn, Math.min(mx, v));
+      return clamp(start + interval * Math.floor((value - start) / interval + 0.5),
+        this.properties.start, this.properties.end);
+    }
+  }
+
+  const sliderStates = new Map();
+  for (const name of window.__JUCE__.initialisationData.__juce__sliders)
+    sliderStates.set(name, new SliderState(name));
+
+  window.__NFR_getSliderState = function(name) {
+    if (!sliderStates.has(name)) sliderStates.set(name, new SliderState(name));
+    return sliderStates.get(name);
+  };
+})();
+
+// =============================================================================
+// NeonFameReverberation — Knob UI
+// =============================================================================
+(function() {
+  function dbg(msg) {
+    var el = document.getElementById('debug-log');
+    if (el) el.textContent = msg;
+  }
+
+  const ARC_CIRC  = 175.929;
+  const ARC_SWEEP = 131.947;
+
+  class KnobBinding {
+    constructor(el) {
+      this.el      = el;
+      this.param   = el.dataset.param;
+      this.min     = parseFloat(el.dataset.min);
+      this.max     = parseFloat(el.dataset.max);
+      this.defVal  = parseFloat(el.dataset.default);
+      this.unit    = el.dataset.unit || "";
+      this.arc     = el.querySelector(".value-arc");
+      this.display = el.querySelector(".knob-value");
+      this.state   = window.__NFR_getSliderState(this.param);
+      this.dragging  = false;
+      this.startY    = 0;
+      this.startNorm = 0;
+
+      this.state.valueChangedEvent.addListener(() => this._onBackendChange());
+      el.addEventListener("mousedown", (e) => this._onDown(e));
+      el.addEventListener("dblclick",  () => this._reset());
+      this._onBackendChange();
+    }
+
+    _onBackendChange() {
+      this._renderNorm(this.state.getNormalisedValue());
+    }
+
+    _onDown(e) {
+      dbg("DOWN: " + this.param);
+      this.dragging  = true;
+      this.startY    = e.clientY;
+      this.startNorm = this.state.getNormalisedValue();
+      this.el.classList.add("dragging");
+      this.state.sliderDragStarted();
+      e.preventDefault();
+    }
+
+    onMove(e) {
+      if (!this.dragging) return;
+      var dy   = this.startY - e.clientY;
+      var norm = Math.max(0, Math.min(1, this.startNorm + dy / 180));
+      this.state.setNormalisedValue(norm);
+      this._renderNorm(norm);
+    }
+
+    onUp() {
+      if (!this.dragging) return;
+      this.dragging = false;
+      this.el.classList.remove("dragging");
+      this.state.sliderDragEnded();
+    }
+
+    _reset() {
+      var norm = (this.defVal - this.min) / (this.max - this.min);
+      this.state.setNormalisedValue(norm);
+      this._renderNorm(norm);
+    }
+
+    _renderNorm(norm) {
+      var len = norm * ARC_SWEEP;
+      var gap = ARC_CIRC - len;
+      this.arc.setAttribute("stroke-dasharray", len.toFixed(3) + " " + gap.toFixed(3));
+      this.display.textContent = this._fmt(this.state.getScaledValue());
+    }
+
+    _fmt(v) {
+      switch (this.unit) {
+        case "ms": return Math.round(v) + "ms";
+        case "s":  return v.toFixed(2) + "s";
+        case "%":  return Math.round(v * 100) + "%";
+        default:   return v.toFixed(2);
+      }
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    var knobEls = document.querySelectorAll(".knob-wrap");
+    dbg(knobEls.length + " knobs");
+    var bindings = Array.from(knobEls).map(function(el) { return new KnobBinding(el); });
+    document.addEventListener("mousemove", function(e) { bindings.forEach(function(b) { b.onMove(e); }); });
+    document.addEventListener("mouseup",   function()  { bindings.forEach(function(b) { b.onUp(); }); });
+    dbg("ready");
+  });
+})();
+</script>
 
 </body>
 </html>

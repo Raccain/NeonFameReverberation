@@ -5,6 +5,13 @@
 
 import * as Juce from "./juce/index.js";
 
+// On-screen debug log — visible directly in the plugin footer
+function dbg (msg) {
+  console.log (msg);
+  const el = document.getElementById ("debug-log");
+  if (el) el.textContent = msg;
+}
+
 // Arc geometry (matches CSS/SVG spec in index.html)
 const ARC_CIRC  = 175.929;   // full circumference at r=28
 const ARC_SWEEP = 131.947;   // 270° sweep = ARC_CIRC × 0.75
@@ -50,6 +57,7 @@ class KnobBinding {
 
   // Mouse press — begin drag
   _onDown (e) {
+    dbg (`DOWN: ${this.param} y=${e.clientY}`);
     this.dragging  = true;
     this.startY    = e.clientY;
     this.startNorm = this.state.getNormalisedValue();
@@ -105,12 +113,14 @@ class KnobBinding {
 // Initialise all knob bindings on DOM ready
 // =============================================================================
 document.addEventListener ("DOMContentLoaded", () => {
-  const bindings = Array.from (document.querySelectorAll (".knob-wrap"))
-                        .map (el => new KnobBinding (el));
+  const knobEls = document.querySelectorAll (".knob-wrap");
+  console.log (`NFR: DOMContentLoaded, found ${knobEls.length} knob-wrap elements`);
+
+  const bindings = Array.from (knobEls).map (el => new KnobBinding (el));
 
   // Global mouse handlers so drag works even if cursor leaves the knob
   document.addEventListener ("mousemove", e => bindings.forEach (b => b.onMove (e)));
   document.addEventListener ("mouseup",   () => bindings.forEach (b => b.onUp()));
 
-  console.log (`NeonFameReverberation: ${bindings.length} parameters bound to JUCE`);
+  console.log (`NFR: ${bindings.length} parameters bound to JUCE`);
 });
