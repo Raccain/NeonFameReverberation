@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MyReverb — Preview</title>
+  <style>
+    /* ============================================================
+       NeoGrid Minimal Design Tokens
+       MyReverb v1 — Dark & Minimal Spring Reverb
+    ============================================================ */
+    :root {
+      --bg:         #111115;
+      --surface:    #1E1E24;
+      --surface-hl: #2A2A33;
+      --primary:    #00FFFF;
+      --text:       #F0F0F5;
+      --muted:      #A0A0B0;
+      --border:     #333340;
+      --radius:     4px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    /* ============================================================
+       Plugin Shell
+    ============================================================ */
+    .plugin {
+      width: 680px;
+      height: 280px;
+      background: linear-gradient(160deg, var(--surface) 0%, var(--bg) 100%);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--primary);
+      border-radius: var(--radius);
+      box-shadow: 0 24px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(0,255,255,0.04);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Corner screws */
+    .screw {
+      position: absolute;
+      width: 10px; height: 10px;
+      background: #0d0d12;
+      border: 1px solid #2a2a35;
+      border-radius: 50%;
+      z-index: 10;
+    }
+    .screw::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) rotate(45deg);
+      width: 60%; height: 1px;
+      background: #3a3a45;
+    }
+    .s-tl { top: 8px; left: 8px; }
+    .s-tr { top: 8px; right: 8px; }
+    .s-bl { bottom: 8px; left: 8px; }
+    .s-br { bottom: 8px; right: 8px; }
+
+    /* ============================================================
+       Header
+    ============================================================ */
+    .header {
+      height: 44px;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      flex-shrink: 0;
+    }
+
+    .plugin-name {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .plugin-name em {
+      color: var(--primary);
+      font-style: normal;
+    }
+
+    .plugin-sub {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      color: var(--muted);
+      text-transform: uppercase;
+      opacity: 0.5;
+    }
+
+    /* ============================================================
+       Body
+    ============================================================ */
+    .body {
+      flex: 1;
+      padding: 12px 20px;
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+      min-height: 0;
+    }
+
+    /* Panels */
+    .panel {
+      background: rgba(0,0,0,0.18);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 12px 6px;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0.5;
+      margin-bottom: 6px;
+      flex-shrink: 0;
+    }
+    .panel-controls {
+      flex: 1;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .panel-input  { width: 88px; flex-shrink: 0; }
+    .panel-spring { flex: 1; }
+    .panel-output { width: 88px; flex-shrink: 0; }
+
+    /* ============================================================
+       Knob Component
+    ============================================================ */
+    .knob-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: ns-resize;
+      width: 68px;
+      flex-shrink: 0;
+    }
+
+    .knob-svg {
+      width: 52px;
+      height: 52px;
+      overflow: visible;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+      transition: filter 0.1s;
+    }
+
+    .knob-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: center;
+      transition: color 0.15s;
+    }
+
+    .knob-value {
+      font-size: 9px;
+      font-family: 'Courier New', Courier, monospace;
+      color: var(--primary);
+      letter-spacing: 0.04em;
+      opacity: 0.75;
+      min-height: 11px;
+      text-align: center;
+    }
+
+    /* Hover state */
+    .knob-wrap:hover .knob-label {
+      color: var(--text);
+    }
+
+    /* Active drag state */
+    .knob-wrap.dragging .knob-svg {
+      filter: drop-shadow(0 0 6px rgba(0,255,255,0.6)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+    .knob-wrap.dragging .knob-label {
+      color: var(--primary);
+    }
+    .knob-wrap.dragging .knob-value {
+      opacity: 1;
+    }
+
+    /* ============================================================
+       Footer
+    ============================================================ */
+    .footer {
+      height: 24px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0,0,0,0.15);
+      border-top: 1px solid rgba(255,255,255,0.03);
+      flex-shrink: 0;
+    }
+    .footer span {
+      font-size: 9px;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0.3;
+    }
+  </style>
+</head>
+<body>
+
+<div class="plugin">
+  <!-- Corner screws -->
+  <div class="screw s-tl"></div>
+  <div class="screw s-tr"></div>
+  <div class="screw s-bl"></div>
+  <div class="screw s-br"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="plugin-name"><em>NEONFAME</em>REVERBERATION</div>
+    <div class="plugin-sub">Spring Reverb</div>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <!-- INPUT panel: Drive -->
+    <div class="panel panel-input">
+      <div class="panel-label">Input</div>
+      <div class="panel-controls">
+        <div class="knob-wrap"
+             data-param="drive"
+             data-min="0" data-max="1" data-default="0.2" data-unit="">
+          <svg class="knob-svg" viewBox="0 0 64 64">
+            <!-- Track arc: 270° from 7-o'clock to 5-o'clock -->
+            <path d="M12.2 51.8 A28 28 0 1 1 51.8 51.8"
+                  fill="none" stroke="#2A2A33" stroke-width="7" stroke-linecap="round"/>
+            <!-- Value arc (JS-controlled via stroke-dasharray) -->
+            <circle class="value-arc"
+                    cx="32" cy="32" r="28"
+                    fill="none" stroke="#00FFFF" stroke-width="7" stroke-linecap="round"
+                    transform="rotate(135 32 32)"
+                    stroke-dasharray="0 175.93"/>
+            <!-- Center dot -->
+            <circle cx="32" cy="32" r="3" fill="#00FFFF" opacity="0.35"/>
+          </svg>
+          <div class="knob-label">Drive</div>
+          <div class="knob-value">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPRING panel: Pre-Delay, Tension, Decay, Damping, Wobble -->
+    <div class="panel panel-spring">
+      <div class="panel-label">Spring</div>
+      <div class="panel-controls">
+
+        <div class="knob-wrap"
+             data-param="pre_delay"
+             data-min="0" data-max="100" data-default="10" data-unit="ms">
+          <svg class="knob-svg" viewBox="0 0 64 64">
+            <path d="M12.2 51.8 A28 28 0 1 1 51.8 51.8"
+                  fill="none" stroke="#2A2A33" stroke-width="7" stroke-linecap="round"/>
+            <circle class="value-arc"
+                    cx="32" cy="32" r="28"
+                    fill="none" stroke="#00FFFF" stroke-width="7" stroke-linecap="round"
+                    transform="rotate(135 32 32)"
+                    stroke-dasharray="0 175.93"/>
+            <circle cx="32" cy="32" r="3" fill="#00FFFF" opacity="0.35"/>
+          </svg>
+          <div class="knob-label">Pre-Dly</div>
+          <div class="knob-value">—</div>
+        </div>
+
+        <div class="knob-wrap"
+             data-param="tension"
+             data-min="0" data-max="1" data-default="0.5" data-unit="">
+          <svg class="knob-svg" viewBox="0 0 64 64">
+            <path d="M12.2 51.8 A28 28 0 1 1 51.8 51.8"
+                  fill="none" stroke="#2A2A33" stroke-width="7" stroke-linecap="round"/>
+            <circle class="value-arc"
+                    cx="32" cy="32" r="28"
+                    fill="none" stroke="#00FFFF" stroke-width="7" stroke-linecap="round"
+                    transform="rotate(135 32 32)"
+                    stroke-dasharray="0 175.93"/>
+            <circle cx="32" cy="32" r="3" fill="#00FFFF" opacity="0.35"/>
+          </svg>
+          <div class="knob-label">Tension</div>
+          <div class="knob-value">—</div>
+        </div>
+
+        <div class="knob-wrap"
+             data-param="decay"
+             data-min="0.1" data-max="8" data-default="2" data-unit="s">
+          <svg class="knob-svg" viewBox="0 0 64 64">
+            <path d="M12.2 51.8 A28 28 0 1 1 51.8 51.8"
+                  fill="none" stroke="#2A2A33" stroke-width="7" stroke-linecap="round"/>
+            <circle class="value-arc"
+                    cx="32" cy="32" r="28"
+                    fill="none" stroke="#00FFFF" stroke-width="7" stroke-linecap="round"
+                    transform="rotate(135 32 32)"
+                    stroke-dasharray="0 175.93"/>
+            <circle cx="32" cy="32" r="3" fill="#00FFFF" opacity="0.35"/>
+          </svg>
+          <div class="knob-label">Decay</div>
+          <div class="knob-value">—</div>
+        </div>
+
+        <div class="knob-wrap"
+             data-param="damping"
+             data-min="0" data-max="1" data-default="0.4" data-unit="">
+          <svg class="knob-svg" viewBox="0 0 64 64">
+            <path d="M12.2 51.8 A28 28 0 1 1 51.8 51.8"
+                  fill="none" stroke="#2A2A33" stroke-width="7" stroke-linecap="round"/>
+            <circle class="value-arc"
+                    cx="32" cy="32" r="28"
+                    fill="none" stroke="#00FFFF" stroke-width="7" stroke-linecap="round"
+                    transform="rotate(135 32 32)"
+                    stroke-dasharray="0 175.93"/>
+            <circle cx="32" cy="32" r="3" fill="#00FFFF" opacity="0.35"/>
+          </svg>
+          <div class="knob-label">Damping</div>
+          <div class="knob-value">—</div>
+        </div>
+
+        <div class="knob-wrap"
+             data-param="wobble"
+             data-min="0" data-max="1" data-default="0.3" data-unit="">
+          <svg class="knob-svg" viewBox="0 0 64 64">
+            <path d="M12.2 51.8 A28 28 0 1 1 51.8 51.8"
+                  fill="none" stroke="#2A2A33" stroke-width="7" stroke-linecap="round"/>
+            <circle class="value-arc"
+                    cx="32" cy="32" r="28"
+                    fill="none" stroke="#00FFFF" stroke-width="7" stroke-linecap="round"
+                    transform="rotate(135 32 32)"
+                    stroke-dasharray="0 175.93"/>
+            <circle cx="32" cy="32" r="3" fill="#00FFFF" opacity="0.35"/>
+          </svg>
+          <div class="knob-label">Wobble</div>
+          <div class="knob-value">—</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- OUTPUT panel: Mix -->
+    <div class="panel panel-output">
+      <div class="panel-label">Output</div>
+      <div class="panel-controls">
+        <div class="knob-wrap"
+             data-param="mix"
+             data-min="0" data-max="1" data-default="0.5" data-unit="%">
+          <svg class="knob-svg" viewBox="0 0 64 64">
+            <path d="M12.2 51.8 A28 28 0 1 1 51.8 51.8"
+                  fill="none" stroke="#2A2A33" stroke-width="7" stroke-linecap="round"/>
+            <circle class="value-arc"
+                    cx="32" cy="32" r="28"
+                    fill="none" stroke="#00FFFF" stroke-width="7" stroke-linecap="round"
+                    transform="rotate(135 32 32)"
+                    stroke-dasharray="0 175.93"/>
+            <circle cx="32" cy="32" r="3" fill="#00FFFF" opacity="0.35"/>
+          </svg>
+          <div class="knob-label">Mix</div>
+          <div class="knob-value">—</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.body -->
+
+  <!-- Footer -->
+  <div class="footer">
+    <span>Preview Mode</span>
+    <span>NeonFameReverberation &middot; Spring Reverb &middot; JUCE 8</span>
+  </div>
+
+</div><!-- /.plugin -->
+
+<script>
+// ============================================================
+// Knob Controller — NeoGrid Arc Style
+// Arc math:
+//   Circle r=28, circumference C = 2π×28 ≈ 175.929
+//   270° sweep = C × 0.75 ≈ 131.947
+//   Value arc dasharray = "{n × 131.947} {C − (n × 131.947)}"
+// ============================================================
+
+const ARC_CIRC  = 175.929;   // full circle circumference at r=28
+const ARC_SWEEP = 131.947;   // 270/360 × ARC_CIRC
+
+class KnobController {
+  constructor(el) {
+    this.el       = el;
+    this.min      = parseFloat(el.dataset.min);
+    this.max      = parseFloat(el.dataset.max);
+    this.defVal   = parseFloat(el.dataset.default);
+    this.unit     = el.dataset.unit || '';
+    this.value    = this.defVal;
+
+    this.arc      = el.querySelector('.value-arc');
+    this.display  = el.querySelector('.knob-value');
+
+    this.dragging  = false;
+    this.startY    = 0;
+    this.startVal  = 0;
+
+    // Sensitivity: 180px of drag = full range
+    this.sensitivity = 180;
+
+    el.addEventListener('mousedown', e => this._onDown(e));
+    el.addEventListener('dblclick',  ()  => this._reset());
+
+    this._render();
+  }
+
+  _onDown(e) {
+    this.dragging = true;
+    this.startY   = e.clientY;
+    this.startVal = this.value;
+    this.el.classList.add('dragging');
+    e.preventDefault();
+  }
+
+  onMove(e) {
+    if (!this.dragging) return;
+    const dy    = this.startY - e.clientY;  // up = positive = increase
+    const range = this.max - this.min;
+    const delta = (dy / this.sensitivity) * range;
+    this.value  = Math.min(this.max, Math.max(this.min, this.startVal + delta));
+    this._render();
+  }
+
+  onUp() {
+    if (!this.dragging) return;
+    this.dragging = false;
+    this.el.classList.remove('dragging');
+  }
+
+  _reset() {
+    this.value = this.defVal;
+    this._render();
+  }
+
+  _render() {
+    const n   = (this.value - this.min) / (this.max - this.min);
+    const len = n * ARC_SWEEP;
+    const gap = ARC_CIRC - len;
+    this.arc.setAttribute('stroke-dasharray', `${len.toFixed(3)} ${gap.toFixed(3)}`);
+    this.display.textContent = this._formatVal(this.value);
+  }
+
+  _formatVal(v) {
+    switch (this.unit) {
+      case 'ms': return `${Math.round(v)}ms`;
+      case 's':  return `${v.toFixed(2)}s`;
+      case '%':  return `${Math.round(v * 100)}%`;
+      default:   return v.toFixed(2);
+    }
+  }
+}
+
+// Initialise all knobs
+const knobs = Array.from(document.querySelectorAll('.knob-wrap'))
+                   .map(el => new KnobController(el));
+
+// Global mouse handlers (so drag works outside knob bounds)
+document.addEventListener('mousemove', e => knobs.forEach(k => k.onMove(e)));
+document.addEventListener('mouseup',   () => knobs.forEach(k => k.onUp()));
+</script>
+
+</body>
+</html>
