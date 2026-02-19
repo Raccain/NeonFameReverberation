@@ -21,10 +21,12 @@ git -C /Users/peterbojesen/Programming/DSP/audio-plugin-coder/plugins/NeonFameRe
   ```bash
   cmake --build /Users/peterbojesen/Programming/DSP/audio-plugin-coder/build --config Release --target NFReverb_VST3
   ```
-- If cmake says "no work to do", force rebuild by touching a source file first:
+- If cmake says "no work to do", or if the user says the binary timestamp has not changed, do a full clean rebuild:
   ```bash
-  touch /Users/peterbojesen/Programming/DSP/audio-plugin-coder/plugins/NeonFameReverberation/Source/PluginProcessor.cpp
+  rm -rf /Users/peterbojesen/Programming/DSP/audio-plugin-coder/build/plugins/NeonFameReverberation/
+  cmake --build /Users/peterbojesen/Programming/DSP/audio-plugin-coder/build --config Release --target NFReverb_VST3
   ```
+- **CRITICAL — Timestamp trust:** The terminal clock runs in a different timezone than the user's system clock. My `ls -la` output will show a DIFFERENT time than what the user sees in Finder or their terminal. If the user says the binary timestamp has not changed, **believe them immediately** and do a full `rm -rf` clean rebuild. Never argue about timestamps.
 - Built artifact location:
   ```
   build/plugins/NeonFameReverberation/NFReverb_artefacts/VST3/NeonFameReverberation.vst3
@@ -40,7 +42,7 @@ git -C /Users/peterbojesen/Programming/DSP/audio-plugin-coder/plugins/NeonFameRe
 ```
 NeonFameReverberation/
 ├── CLAUDE.md                        ← this file
-├── CMakeLists.txt                   ← VERSION currently 1.1.0
+├── CMakeLists.txt                   ← VERSION currently 1.0.5 (DO NOT bump — Cubase rejects version changes)
 ├── status.json                      ← APC phase state
 ├── .ideas/                          ← creative-brief, parameter-spec, architecture, plan
 ├── Design/                          ← v1/v2 UI specs and preview HTML files
@@ -77,7 +79,7 @@ NeonFameReverberation/
 | `drive` | Drive | 0–1 | 0 |
 
 ## Git Workflow
-- **Active branch:** `feature/ui-signal-flow`
+- **Active branch:** `develop`
 - **Branch structure:** `master → develop → feature/...`
 - **Never stage:** `.DS_Store` files
 - **Commit only source files:** `Source/`, `Design/`, `.ideas/`, `CMakeLists.txt`, `status.json`
