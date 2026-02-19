@@ -35,12 +35,14 @@ NFReverbAudioProcessorEditor::NFReverbAudioProcessorEditor (NFReverbAudioProcess
     driveAttachment = std::make_unique<juce::WebSliderParameterAttachment> (
         *audioProcessor.apvts.getParameter ("drive"),     driveRelay);
 
-    // Step 3: Create WebBrowserComponent.
-    // defaultBackend maps to WKWebView on macOS, WebView2 on Windows (if available).
-    // Single fluent chain is required — splitting into multiple statements breaks
-    // the resourceProvider lambda capture on macOS.
+    // Step 3: Create WebBrowserComponent with Windows WebView2 backend
     webView = std::make_unique<juce::WebBrowserComponent> (
         juce::WebBrowserComponent::Options{}
+            .withBackend (juce::WebBrowserComponent::Options::Backend::webview2)
+            .withWinWebView2Options (
+                juce::WebBrowserComponent::Options::WinWebView2{}
+                    .withUserDataFolder (juce::File::getSpecialLocation (
+                        juce::File::SpecialLocationType::tempDirectory)))
             .withNativeIntegrationEnabled()
             .withResourceProvider ([this](const auto& url) { return getResource (url); })
             .withOptionsFrom (mixRelay)
