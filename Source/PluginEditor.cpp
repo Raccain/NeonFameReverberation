@@ -60,8 +60,8 @@ NFReverbAudioProcessorEditor::NFReverbAudioProcessorEditor (NFReverbAudioProcess
     // Step 5: Load web content through resource provider (NOT a data URI)
     webView->goToURL (juce::WebBrowserComponent::getResourceProviderRoot());
 
-    // Window size matches approved design (680 × 280 px)
-    setSize (680, 280);
+    // Window size matches approved design (620 × 220 px)
+    setSize (620, 220);
 
     DBG ("NFReverb: Editor constructor completed");
 }
