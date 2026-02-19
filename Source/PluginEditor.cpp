@@ -5,10 +5,10 @@
 // =============================================================================
 // Constructor
 // =============================================================================
-MyReverbAudioProcessorEditor::MyReverbAudioProcessorEditor (MyReverbAudioProcessor& p)
+NFReverbAudioProcessorEditor::NFReverbAudioProcessorEditor (NFReverbAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
-    DBG ("MyReverb: Editor constructor started");
+    DBG ("NFReverb: Editor constructor started");
 
     // =========================================================================
     // CRITICAL CREATION ORDER (matches CloudWash working pattern):
@@ -60,21 +60,21 @@ MyReverbAudioProcessorEditor::MyReverbAudioProcessorEditor (MyReverbAudioProcess
     // Step 5: Load web content through resource provider (NOT a data URI)
     webView->goToURL (juce::WebBrowserComponent::getResourceProviderRoot());
 
-    // Window size matches approved design (680 × 280 px)
-    setSize (680, 280);
+    // Window size matches approved design (620 × 220 px)
+    setSize (620, 220);
 
-    DBG ("MyReverb: Editor constructor completed");
+    DBG ("NFReverb: Editor constructor completed");
 }
 
 // =============================================================================
 // Paint / Resized
 // =============================================================================
-void MyReverbAudioProcessorEditor::paint (juce::Graphics& g)
+void NFReverbAudioProcessorEditor::paint (juce::Graphics& g)
 {
     g.fillAll (juce::Colours::black);
 }
 
-void MyReverbAudioProcessorEditor::resized()
+void NFReverbAudioProcessorEditor::resized()
 {
     if (webView)
         webView->setBounds (getLocalBounds());
@@ -91,7 +91,7 @@ void MyReverbAudioProcessorEditor::resized()
 //   check_native_interop.js            → BinaryData::check_native_interop_js
 // =============================================================================
 std::optional<juce::WebBrowserComponent::Resource>
-MyReverbAudioProcessorEditor::getResource (const juce::String& url)
+NFReverbAudioProcessorEditor::getResource (const juce::String& url)
 {
     auto path = url.fromFirstOccurrenceOf (
         juce::WebBrowserComponent::getResourceProviderRoot(), false, false);
@@ -99,7 +99,7 @@ MyReverbAudioProcessorEditor::getResource (const juce::String& url)
     if (path.isEmpty() || path == "/")
         path = "/index.html";
 
-    DBG ("MyReverb resource: " + path);
+    DBG ("NFReverb resource: " + path);
 
     const char* data = nullptr;
     int         size = 0;
@@ -140,15 +140,15 @@ MyReverbAudioProcessorEditor::getResource (const juce::String& url)
     }
 
     // Fallback: resource not found
-    DBG ("MyReverb: resource NOT found — " + p);
+    DBG ("NFReverb: resource NOT found — " + p);
     const juce::String fallback = "<!DOCTYPE html><html><body style='background:#111;color:#0ff;font-family:monospace;padding:20px'>"
-                                  "<h3>MyReverb</h3><p>Resource not found: " + p + "</p></body></html>";
+                                  "<h3>NFReverb</h3><p>Resource not found: " + p + "</p></body></html>";
     std::vector<std::byte> fb ((size_t) fallback.getNumBytesAsUTF8());
     std::memcpy (fb.data(), fallback.toRawUTF8(), fb.size());
     return juce::WebBrowserComponent::Resource { std::move (fb), "text/html" };
 }
 
-const char* MyReverbAudioProcessorEditor::getMimeForExtension (const juce::String& ext)
+const char* NFReverbAudioProcessorEditor::getMimeForExtension (const juce::String& ext)
 {
     if (ext == "html") return "text/html";
     if (ext == "js")   return "text/javascript";
@@ -159,7 +159,7 @@ const char* MyReverbAudioProcessorEditor::getMimeForExtension (const juce::Strin
     return "text/plain";
 }
 
-juce::String MyReverbAudioProcessorEditor::getExtension (const juce::String& filename)
+juce::String NFReverbAudioProcessorEditor::getExtension (const juce::String& filename)
 {
     return filename.fromLastOccurrenceOf (".", false, false);
 }

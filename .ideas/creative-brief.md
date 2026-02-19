@@ -1,12 +1,12 @@
-# MyReverb — Creative Brief
+# NeonFameReverberation — Creative Brief
 
 ## Hook
 *The elastic soul of spring reverb, tuned for the deep house groove.*
 
 ## Concept
-MyReverb is a spring reverb plugin built specifically for the demands of deep house production. It captures the bouncy, organic character of real spring tanks — the sizzle, the wobble, the bloom — while giving producers the precision controls needed to sit a reverb perfectly in a mix.
+NeonFameReverberation is a spring reverb plugin built specifically for the demands of deep house production. It captures the bouncy, organic character of real spring tanks — the sizzle, the wobble, the bloom — while giving producers the precision controls needed to sit a reverb perfectly in a mix.
 
-Where most spring reverb emulations chase vintage lo-fi, MyReverb threads a different needle: warm and characterful, but controlled. Clean enough for pads and chords, elastic enough for percussion and bass hits. The kind of reverb that adds movement without muddying a groove.
+Where most spring reverb emulations chase vintage lo-fi, NeonFameReverberation threads a different needle: warm and characterful, but controlled. Clean enough for pads and chords, elastic enough for percussion and bass hits. The kind of reverb that adds movement without muddying a groove.
 
 ## Sonic Character
 - **Foundation:** Classic spring reverb with realistic allpass-based tank simulation

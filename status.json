@@ -1,6 +1,6 @@
 {
-  "plugin_name": "MyReverb",
-  "version": "v0.0.0",
+  "plugin_name": "NeonFameReverberation",
+  "version": "v1.0.5",
   "current_phase": "code_complete",
   "ui_framework": "webview",
   "complexity_score": 3,

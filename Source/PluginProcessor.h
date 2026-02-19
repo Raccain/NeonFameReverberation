@@ -102,7 +102,7 @@ struct PreDelayBuffer
 };
 
 // =============================================================================
-// MyReverbAudioProcessor — Deep House Spring Reverb
+// NFReverbAudioProcessor (NeonFameReverberation) — Deep House Spring Reverb
 //
 // Signal chain (per channel):
 //   Input → PreDelay → Drive (tanh) → Spring Tank → Mix Blend → Output
@@ -111,11 +111,11 @@ struct PreDelayBuffer
 //   Input + Feedback → AP1 → AP2 → AP3[LFO] → Output
 //                                            → LP(damping) → × fbGain → Feedback
 // =============================================================================
-class MyReverbAudioProcessor : public juce::AudioProcessor
+class NFReverbAudioProcessor : public juce::AudioProcessor
 {
 public:
-    MyReverbAudioProcessor();
-    ~MyReverbAudioProcessor() override;
+    NFReverbAudioProcessor();
+    ~NFReverbAudioProcessor() override;
 
     //==========================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -191,5 +191,5 @@ private:
     static float applyDrive (float x, float driveGain) noexcept;
     void resetSpringTank() noexcept;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MyReverbAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NFReverbAudioProcessor)
 };
