@@ -598,7 +598,8 @@
     let startNorm    = 0;
 
     function renderValue(scaled) {
-      const norm = Math.max(0, Math.min(1, (scaled - min) / (max - min)));
+      // Use JUCE's normalised value for arc — respects skew/non-linear ranges
+      const norm = Math.max(0, Math.min(1, state.getNormalisedValue()));
       const len  = norm * ARC_SWEEP;
       const gap  = ARC_CIRC - len;
       arc.setAttribute("stroke-dasharray", len.toFixed(2) + " " + gap.toFixed(2));
@@ -618,12 +619,13 @@
       state.sliderDragStarted();
     });
 
-    // Mousemove — drag
+    // Mousemove — drag (relative: update startY each frame to avoid accumulation)
     document.addEventListener("mousemove", (e) => {
       if (!isDragging) return;
-      const delta    = (startY - e.clientY) * 0.005;
-      const newNorm  = Math.max(0, Math.min(1, startNorm + delta));
-      state.setNormalisedValue(newNorm);
+      const delta   = (startY - e.clientY) * 0.005;
+      startY        = e.clientY;                          // ← reset anchor each frame
+      startNorm     = Math.max(0, Math.min(1, startNorm + delta));
+      state.setNormalisedValue(startNorm);
       renderValue(state.getScaledValue());
     });
 
@@ -642,9 +644,8 @@
       renderValue(def);
     });
 
-    // Initial render — use JUCE value if available, else default
-    const initial = state.getScaledValue();
-    renderValue(initial !== 0 || paramName === "mix" ? initial : def);
+    // Initial render — use default until JUCE sends initialUpdate
+    renderValue(def);
   }
 
   // ── Init ───────────────────────────────────────────────────────────────────
