@@ -502,39 +502,156 @@
 </div>
 
 <script>
-(function() {
-  const ARC_CIRC = 175.929, ARC_SWEEP = 131.947;
+(function () {
+  'use strict';
+
+  // ── Constants ──────────────────────────────────────────────────────────────
+  const ARC_CIRC  = 175.929;
+  const ARC_SWEEP = 131.947;
+
   function fmt(v, unit) {
     if (unit === "ms") return Math.round(v) + "ms";
     if (unit === "s")  return v.toFixed(2) + "s";
     if (unit === "%")  return Math.round(v * 100) + "%";
     return v.toFixed(2);
   }
-  class Knob {
-    constructor(el) {
-      this.el = el;
-      this.min = parseFloat(el.dataset.min); this.max = parseFloat(el.dataset.max);
-      this.def = parseFloat(el.dataset.default); this.unit = el.dataset.unit || "";
-      this.arc = el.querySelector(".value-arc"); this.disp = el.querySelector(".knob-value");
-      this.norm = (this.def - this.min) / (this.max - this.min);
-      this.dragging = false; this.startY = 0; this.startNorm = 0;
-      this._render(this.norm);
-      el.addEventListener("mousedown", e => { this.dragging=true; this.startY=e.clientY; this.startNorm=this.norm; el.classList.add("dragging"); e.preventDefault(); });
-      el.addEventListener("dblclick", () => { this.norm=(this.def-this.min)/(this.max-this.min); this._render(this.norm); });
+
+  // ── JUCE SliderState (talks to C++ via window.__JUCE__.backend) ───────────
+  class SliderState {
+    constructor(name) {
+      this.name       = name;
+      this.identifier = "__juce__slider" + name;
+      this.scaledValue = 0;
+      this.properties  = { start: 0, end: 1, skew: 1, name: "", label: "",
+                            numSteps: 100, interval: 0, parameterIndex: -1 };
+      this.listeners   = [];
+
+      if (window.__JUCE__ && window.__JUCE__.backend) {
+        window.__JUCE__.backend.addEventListener(this.identifier,
+          (event) => this._handleEvent(event));
+        window.__JUCE__.backend.emitEvent(this.identifier,
+          { eventType: "requestInitialUpdate" });
+      }
     }
-    move(e) { if (!this.dragging) return; this.norm=Math.max(0,Math.min(1,this.startNorm+(this.startY-e.clientY)/180)); this._render(this.norm); }
-    up()    { if (!this.dragging) return; this.dragging=false; this.el.classList.remove("dragging"); }
-    _render(n) {
-      const len=n*ARC_SWEEP, gap=ARC_CIRC-len;
-      this.arc.setAttribute("stroke-dasharray", len.toFixed(2)+" "+gap.toFixed(2));
-      this.disp.textContent = fmt(this.min+n*(this.max-this.min), this.unit);
+
+    _handleEvent(event) {
+      if (event.eventType === "initialUpdate" || event.eventType === "valueChanged") {
+        if (event.properties) this.properties = event.properties;
+        if (event.value !== undefined) {
+          this.scaledValue = event.value;
+          this.listeners.forEach(fn => fn());
+        }
+      }
     }
+
+    getNormalisedValue() {
+      const { start, end } = this.properties;
+      if (end === start) return 0;
+      return (this.scaledValue - start) / (end - start);
+    }
+
+    getScaledValue() { return this.scaledValue; }
+
+    setNormalisedValue(norm) {
+      const { start, end } = this.properties;
+      this.scaledValue = start + norm * (end - start);
+      if (window.__JUCE__ && window.__JUCE__.backend)
+        window.__JUCE__.backend.emitEvent(this.identifier,
+          { eventType: "valueChanged", value: this.scaledValue });
+    }
+
+    sliderDragStarted() {
+      if (window.__JUCE__ && window.__JUCE__.backend)
+        window.__JUCE__.backend.emitEvent(this.identifier,
+          { eventType: "sliderDragStarted" });
+    }
+
+    sliderDragEnded() {
+      if (window.__JUCE__ && window.__JUCE__.backend)
+        window.__JUCE__.backend.emitEvent(this.identifier,
+          { eventType: "sliderDragEnded" });
+    }
+
+    addValueChangedListener(fn) { this.listeners.push(fn); }
   }
+
+  // Cache of SliderState instances (one per parameter name)
+  const sliderStates = new Map();
+  function getSliderState(name) {
+    if (!sliderStates.has(name)) sliderStates.set(name, new SliderState(name));
+    return sliderStates.get(name);
+  }
+
+  // ── Knob binding ───────────────────────────────────────────────────────────
+  function bindKnob(el) {
+    const paramName  = el.dataset.param;
+    const min        = parseFloat(el.dataset.min);
+    const max        = parseFloat(el.dataset.max);
+    const def        = parseFloat(el.dataset.default);
+    const unit       = el.dataset.unit || "";
+    const arc        = el.querySelector(".value-arc");
+    const disp       = el.querySelector(".knob-value");
+    const state      = getSliderState(paramName);
+
+    let isDragging   = false;
+    let startY       = 0;
+    let startNorm    = 0;
+
+    function renderValue(scaled) {
+      const norm = Math.max(0, Math.min(1, (scaled - min) / (max - min)));
+      const len  = norm * ARC_SWEEP;
+      const gap  = ARC_CIRC - len;
+      arc.setAttribute("stroke-dasharray", len.toFixed(2) + " " + gap.toFixed(2));
+      disp.textContent = fmt(scaled, unit);
+    }
+
+    // Listen for JUCE-side changes (automation, preset load)
+    state.addValueChangedListener(() => renderValue(state.getScaledValue()));
+
+    // Mousedown — start drag
+    el.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      isDragging = true;
+      startY     = e.clientY;
+      startNorm  = state.getNormalisedValue();
+      el.classList.add("dragging");
+      state.sliderDragStarted();
+    });
+
+    // Mousemove — drag
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      const delta    = (startY - e.clientY) * 0.005;
+      const newNorm  = Math.max(0, Math.min(1, startNorm + delta));
+      state.setNormalisedValue(newNorm);
+      renderValue(state.getScaledValue());
+    });
+
+    // Mouseup — end drag
+    document.addEventListener("mouseup", () => {
+      if (!isDragging) return;
+      isDragging = false;
+      el.classList.remove("dragging");
+      state.sliderDragEnded();
+    });
+
+    // Double-click — reset to default
+    el.addEventListener("dblclick", () => {
+      const norm = (def - min) / (max - min);
+      state.setNormalisedValue(norm);
+      renderValue(def);
+    });
+
+    // Initial render — use JUCE value if available, else default
+    const initial = state.getScaledValue();
+    renderValue(initial !== 0 || paramName === "mix" ? initial : def);
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
   document.addEventListener("DOMContentLoaded", () => {
-    const ks = Array.from(document.querySelectorAll(".knob-wrap")).map(el => new Knob(el));
-    document.addEventListener("mousemove", e => ks.forEach(k => k.move(e)));
-    document.addEventListener("mouseup",   ()  => ks.forEach(k => k.up()));
+    document.querySelectorAll(".knob-wrap").forEach(bindKnob);
   });
+
 })();
 </script>
 </body>
