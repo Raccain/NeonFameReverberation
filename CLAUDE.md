@@ -12,6 +12,11 @@ git -C /Users/peterbojesen/Programming/DSP/audio-plugin-coder/plugins/NeonFameRe
 ## Build Rules (CRITICAL)
 - **NEVER** copy the built VST3 to `~/Library/Audio/Plug-Ins/VST3/` — the user does this manually
 - **Always build to the local `build/` folder only**
+- **Always build universal binary (x86_64;arm64)** — arm64-only builds are invisible to Cubase
+- If cmake was reconfigured for arm64-only, restore with:
+  ```bash
+  cmake -S /Users/peterbojesen/Programming/DSP/audio-plugin-coder -B /Users/peterbojesen/Programming/DSP/audio-plugin-coder/build -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
+  ```
 - Build command (run from `audio-plugin-coder/` root):
   ```bash
   cmake --build /Users/peterbojesen/Programming/DSP/audio-plugin-coder/build --config Release --target NFReverb_VST3
