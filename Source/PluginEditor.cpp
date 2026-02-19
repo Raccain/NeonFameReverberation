@@ -35,30 +35,22 @@ NFReverbAudioProcessorEditor::NFReverbAudioProcessorEditor (NFReverbAudioProcess
     driveAttachment = std::make_unique<juce::WebSliderParameterAttachment> (
         *audioProcessor.apvts.getParameter ("drive"),     driveRelay);
 
-    // Step 3: Create WebBrowserComponent with platform-appropriate backend.
-    // On Windows: use Chromium-based WebView2 (explicit, with user data folder).
-    // On macOS:   use defaultBackend which maps to WKWebView automatically.
-    auto webViewOptions = juce::WebBrowserComponent::Options{}
-        .withNativeIntegrationEnabled()
-        .withResourceProvider ([this](const auto& url) { return getResource (url); })
-        .withOptionsFrom (mixRelay)
-        .withOptionsFrom (decayRelay)
-        .withOptionsFrom (tensionRelay)
-        .withOptionsFrom (preDelayRelay)
-        .withOptionsFrom (dampingRelay)
-        .withOptionsFrom (wobbleRelay)
-        .withOptionsFrom (driveRelay);
-
-   #if JUCE_WINDOWS
-    webViewOptions = webViewOptions
-        .withBackend (juce::WebBrowserComponent::Options::Backend::webview2)
-        .withWinWebView2Options (
-            juce::WebBrowserComponent::Options::WinWebView2{}
-                .withUserDataFolder (juce::File::getSpecialLocation (
-                    juce::File::SpecialLocationType::tempDirectory)));
-   #endif
-
-    webView = std::make_unique<juce::WebBrowserComponent> (webViewOptions);
+    // Step 3: Create WebBrowserComponent.
+    // defaultBackend maps to WKWebView on macOS, WebView2 on Windows (if available).
+    // Single fluent chain is required — splitting into multiple statements breaks
+    // the resourceProvider lambda capture on macOS.
+    webView = std::make_unique<juce::WebBrowserComponent> (
+        juce::WebBrowserComponent::Options{}
+            .withNativeIntegrationEnabled()
+            .withResourceProvider ([this](const auto& url) { return getResource (url); })
+            .withOptionsFrom (mixRelay)
+            .withOptionsFrom (decayRelay)
+            .withOptionsFrom (tensionRelay)
+            .withOptionsFrom (preDelayRelay)
+            .withOptionsFrom (dampingRelay)
+            .withOptionsFrom (wobbleRelay)
+            .withOptionsFrom (driveRelay)
+    );
 
     // Step 4: Add to component hierarchy
     addAndMakeVisible (*webView);
