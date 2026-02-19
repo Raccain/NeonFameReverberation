@@ -18,7 +18,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      width: 760px; height: 220px;
+      width: 620px; height: 220px;
       overflow: hidden;
       background: var(--bg);
       font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
@@ -115,10 +115,10 @@
     }
 
     .stage-label {
-      font-size: 8.5px; font-weight: 700;
-      letter-spacing: 0.2em; text-transform: uppercase;
+      font-size: 9.5px; font-weight: 700;
+      letter-spacing: 0.15em; text-transform: uppercase;
       color: var(--text);
-      opacity: 0.55;
+      opacity: 0.6;
       line-height: 1;
     }
 
@@ -169,15 +169,15 @@
     }
 
     .knob-label {
-      font-size: 7.5px; font-weight: 700;
-      letter-spacing: 0.12em; text-transform: uppercase;
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
       color: var(--muted); text-align: center;
       transition: color 0.15s; line-height: 1;
     }
     .knob-value {
-      font-size: 7.5px; font-family: 'Courier New', monospace;
-      color: var(--primary); opacity: 0.7;
-      min-height: 10px; text-align: center; line-height: 1;
+      font-size: 9px; font-family: 'Courier New', monospace;
+      color: var(--primary); opacity: 0.85;
+      min-height: 11px; text-align: center; line-height: 1;
     }
 
     .knob-wrap:hover .knob-label { color: var(--text); }
@@ -209,7 +209,7 @@
 <div class="plugin">
 
   <!-- Full-bleed spring background -->
-  <svg class="spring-bg" viewBox="0 0 760 220" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <svg class="spring-bg" viewBox="0 0 620 220" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <radialGradient id="fade" cx="50%" cy="50%" r="55%">
         <stop offset="0%"   stop-color="#FF9500" stop-opacity="0.12"/>
@@ -268,7 +268,7 @@
       Each ellipse: centre cx, ry=42. Left point=(cx-13,110), Right point=(cx+13,110).
       Bottom arc: M cx-13,110  A 18 42 0 1 0 cx+13,110
     -->
-    <g fill="none" stroke="#FF9500" stroke-width="1.6" opacity="0.09">
+    <g fill="none" stroke="#FF9500" stroke-width="1.6" opacity="0.13">
       <path d="M -3,110 A 18 42 0 1 0 33,110"/>
       <path d="M 23,110 A 18 42 0 1 0 59,110"/>
       <path d="M 49,110 A 18 42 0 1 0 85,110"/>
@@ -308,7 +308,7 @@
     -->
 
     <!-- Erase layer (background colour, slightly wider) -->
-    <g fill="none" stroke="#17140E" stroke-width="5" opacity="1">
+    <g fill="none" stroke="#17140E" stroke-width="3.5" opacity="1">
       <path d="M -3,110 A 18 42 0 1 1 33,110"/>
       <path d="M 23,110 A 18 42 0 1 1 59,110"/>
       <path d="M 49,110 A 18 42 0 1 1 85,110"/>
@@ -341,7 +341,7 @@
     </g>
 
     <!-- Front wire -->
-    <g fill="none" stroke="#FF9500" stroke-width="1.6" opacity="0.18">
+    <g fill="none" stroke="#FF9500" stroke-width="1.6" opacity="0.22">
       <path d="M -3,110 A 18 42 0 1 1 33,110"/>
       <path d="M 23,110 A 18 42 0 1 1 59,110"/>
       <path d="M 49,110 A 18 42 0 1 1 85,110"/>

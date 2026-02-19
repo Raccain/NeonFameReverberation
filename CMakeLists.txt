@@ -30,7 +30,7 @@ juce_add_plugin(NFReverb
     PLUGIN_CODE             MRvb
     FORMATS                 ${PLUGIN_FORMATS}
     PRODUCT_NAME            "NeonFameReverberation"
-    VERSION                 "1.0.5"
+    VERSION                 "1.1.0"
     NEEDS_WEBVIEW2          ${NEEDS_WEBVIEW2}
     NEEDS_WEB_BROWSER       ${NEEDS_WEB_BROWSER}
     VST3_CATEGORIES         Fx Reverb
